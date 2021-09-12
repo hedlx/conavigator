@@ -15,7 +15,7 @@ class UberMap extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const CircularProgressIndicator();
+      return const Center(child: CircularProgressIndicator());
     }
 
     return FlutterMap(

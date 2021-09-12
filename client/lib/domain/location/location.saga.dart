@@ -1,11 +1,12 @@
 import 'package:conavigator/domain/location/location.actions.dart';
+import 'package:flutter/foundation.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:location/location.dart';
 import 'package:redux_saga/redux_saga.dart';
 import 'dart:io' show Platform;
 
 initLocationSaga() sync* {
-  if (Platform.isLinux) {
+  if (!kIsWeb && Platform.isLinux) {
     // TODO: Somehow detect location, maybe by IP or something like that
     yield Put(LocationUpdatedAction(coords: LatLng(42, 42)));
     return;
