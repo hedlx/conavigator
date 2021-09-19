@@ -7,6 +7,8 @@ import 'package:redux/redux.dart';
 import 'package:redux_saga/redux_saga.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
   final sagaMiddleware = createSagaMiddleware();
   final store = Store<AppState>(rootReducer,
       initialState: initAppState,
