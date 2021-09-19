@@ -1,4 +1,6 @@
 import 'package:conavigator/domain/location/location.reducer.dart';
+import 'package:conavigator/globals.dart';
+import 'package:conavigator/osmxml.dart';
 import 'package:conavigator/store/app.state.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -18,10 +20,31 @@ class UberMap extends StatelessWidget {
       return const Center(child: CircularProgressIndicator());
     }
 
+    final polyLines = <Polyline>[];
+    final osmXml = globalOsmXml;
+    if (osmXml != null) {
+      for (final entry in osmXml.nextNodes.entries) {
+        final from = osmXml.nodes[entry.key]!;
+        for (final to in entry.value) {
+          polyLines.add(
+              Polyline(
+                color: Colors.black,
+                strokeWidth: 2,
+                points: [
+                  from, osmXml.nodes[to]!,
+                ],
+              )
+          );
+        }
+      }
+    }
+
     return FlutterMap(
       options: MapOptions(
         center: center,
         zoom: 13.0,
+        onTap: (point) {
+        },
       ),
       layers: [
         TileLayerOptions(
@@ -29,6 +52,9 @@ class UberMap extends StatelessWidget {
             subdomains: ['a', 'b', 'c']),
         MarkerLayerOptions(
           markers: [],
+        ),
+        PolylineLayerOptions(
+          polylines: polyLines,
         ),
       ],
     );
