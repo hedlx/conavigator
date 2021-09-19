@@ -1,20 +1,18 @@
+import 'dart:convert';
+
 import 'package:conavigator/domain/location/location.actions.dart';
-import 'package:flutter/foundation.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:redux_saga/redux_saga.dart';
-import 'dart:io' show Platform;
+import 'package:logger/logger.dart';
+import 'package:http/http.dart' as http;
 
-Future<Position> _determinePosition() async {
+Future<LatLng?> _determinePositionUsingGeolocator() async {
   bool serviceEnabled;
   LocationPermission permission;
 
-  // Test if location services are enabled.
   serviceEnabled = await Geolocator.isLocationServiceEnabled();
   if (!serviceEnabled) {
-    // Location services are not enabled don't continue
-    // accessing the position and request users of the
-    // App to enable the location services.
     return Future.error('Location services are disabled.');
   }
 
@@ -32,25 +30,40 @@ Future<Position> _determinePosition() async {
         'Location permissions are permanently denied, we cannot request permissions.');
   }
 
-  return await Geolocator.getCurrentPosition();
+  final loc = await Geolocator.getCurrentPosition();
+  return LatLng(loc.latitude, loc.longitude);
 }
 
-initLocationSaga() sync* {
-  if (!kIsWeb && (Platform.isLinux || Platform.isMacOS || Platform.isWindows)) {
-    // TODO: Somehow detect location, maybe by IP or something like that
-    yield Put(LocationUpdatedAction(coords: LatLng(54, 82)));
-    return;
+Future<LatLng?> _determinePositionUsingGeoIp() async {
+  final data = await http.get(Uri.parse("https://ipinfo.io/json"));
+  if (data.statusCode != 200) {
+    return null;
+  }
+  final String loc = (json.decode(data.body) as Map<String, dynamic>)["loc"] as String;
+  final latlng = loc.split(",");
+  return LatLng(double.parse(latlng[0]), double.parse(latlng[1]));
+}
+
+Future<LatLng> _determinePosition() async {
+  final logger = Logger();
+
+  try {
+    return (await _determinePositionUsingGeolocator())!;
+  } catch (e) {
+    logger.w("Could not determine position using Geolocator: $e");
   }
 
   try {
-    var coords = Result<Position>();
-
-    yield Call(_determinePosition, result: coords);
-    final res = coords.value;
-
-    yield Put(LocationUpdatedAction(
-        coords: LatLng(res?.latitude ?? 0, res?.longitude ?? 0)));
+    return (await _determinePositionUsingGeoIp())!;
   } catch (e) {
-    yield Put(LocationUpdatedAction(coords: LatLng(0, 0)));
+    logger.w("Could not determine position using GeoIP: $e");
   }
+
+  return LatLng(54, 82);
+}
+
+initLocationSaga() sync* {
+  final coords = Result<LatLng>();
+  yield Call(_determinePosition, result: coords);
+  yield Put(LocationUpdatedAction(coords: coords.value ?? LatLng(0, 0)));
 }
