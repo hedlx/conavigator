@@ -6,9 +6,9 @@ import 'package:redux_saga/redux_saga.dart';
 import 'dart:io' show Platform;
 
 initLocationSaga() sync* {
-  if (!kIsWeb && Platform.isLinux) {
+  if (!kIsWeb && (Platform.isLinux || Platform.isMacOS || Platform.isWindows)) {
     // TODO: Somehow detect location, maybe by IP or something like that
-    yield Put(LocationUpdatedAction(coords: LatLng(42, 42)));
+    yield Put(LocationUpdatedAction(coords: LatLng(54, 82)));
     return;
   }
 
